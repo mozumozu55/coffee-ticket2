@@ -90,7 +90,8 @@
   .layout {
     display: grid;
     grid-template-columns: 280px 1fr;
-    min-height: calc(100vh - 74px);
+    height: calc(100vh - 74px);
+    overflow: hidden;
   }
 
   /* ===== SIDEBAR ===== */
@@ -100,6 +101,7 @@
     display: flex;
     flex-direction: column;
     overflow-y: auto;
+    height: 100%;
   }
   .sidebar-label {
     font-size:11px;
@@ -151,7 +153,7 @@
   .main {
     padding: 28px;
     overflow-y: auto;
-    max-height: calc(100vh - 74px);
+    height: 100%;
   }
 
   /* empty state */
@@ -444,9 +446,9 @@
 
   /* iPad specific */
   @media (max-width:768px) {
-    .layout { grid-template-columns:1fr; }
-    .sidebar { max-height:200px; border-right:none; border-bottom:2px solid var(--border); }
-    .main { max-height:none; }
+    .layout { grid-template-columns:1fr; grid-template-rows:200px 1fr; height:calc(100vh - 74px); }
+    .sidebar { max-height:200px; height:200px; border-right:none; border-bottom:2px solid var(--border); }
+    .main { height:auto; overflow-y:auto; }
     .stats-row { grid-template-columns:repeat(3,1fr); }
     .tickets-row { grid-template-columns:repeat(11,1fr); }
     .action-row { flex-direction:column; }
@@ -623,7 +625,16 @@ function renderSidebar() {
     el.innerHTML = `<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px;">利用者がいません</div>`;
     return;
   }
-  el.innerHTML = state.users.map(user => {
+  // あいうえお順（メモのカタカナ読み優先、なければ名前で並び替え）
+  const sorted = [...state.users].sort((a, b) => {
+    const toKey = u => {
+      // メモの半角英数字・記号をすべて除去してからカタカナ→ひらがな変換
+      const base = (u.memo || u.name).replace(/[A-Za-z0-9\s!"#$%&'()*+,\-./:;<=>?@[\\\]^_`{|}~]+/g, '');
+      return base.replace(/[ァ-ン]/g, s => String.fromCharCode(s.charCodeAt(0) - 0x60));
+    };
+    return toKey(a).localeCompare(toKey(b), 'ja');
+  });
+  el.innerHTML = sorted.map(user => {
     const rem = totalRemaining(user);
     const active = user.id === state.selectedUserId ? 'active' : '';
     const ac = avatarClass(user);
